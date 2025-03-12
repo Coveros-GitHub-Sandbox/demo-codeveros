@@ -1,10 +1,26 @@
 const unirest = require('unirest');
 
+const allowedUrls = [
+  'http://auth-service-url/api/auth/signToken',
+  'http://auth-service-url/api/auth/verifyToken',
+  'http://user-service-url/api/user',
+  'http://user-service-url/api/user/login'
+];
+
+function validateUrl(url) {
+  return allowedUrls.includes(url);
+}
+
 module.exports = opts => {
   async function signToken (payload) {
     try {
+      const url = `${opts.authServiceUrl}/api/auth/signToken`;
+      if (!validateUrl(url)) {
+        console.log('Invalid URL');
+        return;
+      }
       const tokenRes = await unirest
-        .post(`${opts.authServiceUrl}/api/auth/signToken`).type('json').send({ payload });
+        .post(url).type('json').send({ payload });
 
       if (!tokenRes) {
         console.log('Did not receive a response when attempting to sign JWT token');
@@ -34,7 +50,12 @@ module.exports = opts => {
 
     let createUserRes;
     try {
-      createUserRes = await unirest.post(`${opts.userServiceUrl}/api/user`).type('json').send(req.body);
+      const url = `${opts.userServiceUrl}/api/user`;
+      if (!validateUrl(url)) {
+        console.log('Invalid URL');
+        return sendError();
+      }
+      createUserRes = await unirest.post(url).type('json').send(req.body);
     } catch (err) {
       console.error('Failed to create user record in User service: ', err);
       return sendError();
@@ -74,8 +95,13 @@ module.exports = opts => {
     }
 
     try {
+      const url = `${opts.userServiceUrl}/api/user/login`;
+      if (!validateUrl(url)) {
+        console.log('Invalid URL');
+        return sendLoginError();
+      }
       const loginRes = await unirest
-        .post(`${opts.userServiceUrl}/api/user/login`)
+        .post(url)
         .type('json')
         .send({ username, password });
 
@@ -121,8 +147,13 @@ module.exports = opts => {
     const splitAuth = authHeader.split(' ');
     if (Array.isArray(splitAuth) && splitAuth.length >= 2 && splitAuth[0] === 'Bearer') {
       try {
+        const url = `${opts.authServiceUrl}/api/auth/verifyToken`;
+        if (!validateUrl(url)) {
+          console.log('Invalid URL');
+          return sendTokenError();
+        }
         const tokenRes = await unirest
-          .post(`${opts.authServiceUrl}/api/auth/verifyToken`)
+          .post(url)
           .type('json')
           .send({ token: splitAuth[1] });
         if (tokenRes.ok && tokenRes.body && tokenRes.body.valid) {
@@ -144,7 +175,12 @@ module.exports = opts => {
     }
 
     try {
-      const userRes = await unirest.get(`${opts.userServiceUrl}/api/user/${req.jwtPayload._id}`);
+      const url = `${opts.userServiceUrl}/api/user/${req.jwtPayload._id}`;
+      if (!validateUrl(url)) {
+        console.log('Invalid URL');
+        return res.status(200).send();
+      }
+      const userRes = await unirest.get(url);
 
       if (!userRes || userRes.error || !userRes.ok || !userRes.body || !userRes.body._id) {
         console.log('Failed to retrieve user from JWT');
