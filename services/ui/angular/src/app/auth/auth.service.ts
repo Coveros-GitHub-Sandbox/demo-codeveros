@@ -67,9 +67,23 @@ export class AuthService {
     return this.loggedInUser;
   }
 
+  validateUrl(url: string): boolean {
+    const allowedUrls = [
+      `${this.endpoint}/login`,
+      `${this.endpoint}/register`,
+      `${this.endpoint}/logout`,
+      `${this.endpoint}/loggedin`
+    ];
+    return allowedUrls.includes(url);
+  }
+
   login(username: string, password: string): Observable<boolean> {
     this.token = null;
-    return this.http.post<LoginResponse>(`${this.endpoint}/login`, {username, password})
+    const url = `${this.endpoint}/login`;
+    if (!this.validateUrl(url)) {
+      throw new Error('Invalid URL');
+    }
+    return this.http.post<LoginResponse>(url, {username, password})
       .pipe(map(({ token, user }) => {
         this.token = token;
         this.loggedInUser = user;
@@ -78,7 +92,11 @@ export class AuthService {
   }
 
   register(registration: Registration): Observable<boolean> {
-    return this.http.post<LoginResponse>(`${this.endpoint}/register`, registration)
+    const url = `${this.endpoint}/register`;
+    if (!this.validateUrl(url)) {
+      throw new Error('Invalid URL');
+    }
+    return this.http.post<LoginResponse>(url, registration)
       .pipe(map( ({ token, user }) => {
         this.token = token;
         this.loggedInUser = user;
@@ -89,7 +107,11 @@ export class AuthService {
   logout() {
     this.token = null;
     this.loggedInUser = null;
-    this.http.post<void>(`${this.endpoint}/logout`, {});
+    const url = `${this.endpoint}/logout`;
+    if (!this.validateUrl(url)) {
+      throw new Error('Invalid URL');
+    }
+    this.http.post<void>(url, {});
     this.router.navigate(['/login']);
   }
 }

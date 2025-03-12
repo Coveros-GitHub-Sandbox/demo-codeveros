@@ -30,10 +30,26 @@ const baseSpec = {
   security: [{ bearerAuth: [] }]
 };
 
+const allowedUrls = [
+  'http://user-service-url/api/docs',
+  'http://training-service-url/api/docs'
+];
+
+function validateUrl(url) {
+  return allowedUrls.includes(url);
+}
+
 module.exports = opts => async (req, res) => {
+  const userServiceUrl = `${opts.userServiceUrl}/api/docs`;
+  const trainingServiceUrl = `${opts.trainingServiceUrl}/api/docs`;
+
+  if (!validateUrl(userServiceUrl) || !validateUrl(trainingServiceUrl)) {
+    return res.status(400).send('Invalid URL');
+  }
+
   const [userSpec, trainingSpec] = await Promise.all([
-    unirest.get(`${opts.userServiceUrl}/api/docs`),
-    unirest.get(`${opts.trainingServiceUrl}/api/docs`)
+    unirest.get(userServiceUrl),
+    unirest.get(trainingServiceUrl)
   ]);
 
   let specFailure = false;
